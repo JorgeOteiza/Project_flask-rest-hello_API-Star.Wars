@@ -2,9 +2,8 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 import os
-from flask import Flask, request, jsonify, url_for
+from flask import Flask, request, jsonify
 from flask_migrate import Migrate
-from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
@@ -13,6 +12,7 @@ from models import db, User, Character, Planet, FavoriteCharacter, FavoritePlane
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 
+# Setup database
 db_url = os.getenv("DATABASE_URL")
 if db_url is not None:
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace("postgres://", "postgresql://")
@@ -35,13 +35,7 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
-@app.route('/user', methods=['GET'])
-def handle_hello():
-    response_body = {
-        "msg": "Hello, this is your GET /user response "
-    }
-    return jsonify(response_body), 200
-
+# Endpoints de Characters
 @app.route('/people', methods=['GET'])
 def get_people():
     people = Character.query.all()
@@ -55,6 +49,7 @@ def get_person(people_id):
         return jsonify({"msg": "Character not found"}), 404
     return jsonify(person.serialize()), 200
 
+# Endpoints de Planets
 @app.route('/planets', methods=['GET'])
 def get_planets():
     planets = Planet.query.all()
@@ -68,6 +63,7 @@ def get_planet(planet_id):
         return jsonify({"msg": "Planet not found"}), 404
     return jsonify(planet.serialize()), 200
 
+# Endpoints de Users
 @app.route('/users', methods=['GET'])
 def get_users():
     users = User.query.all()
@@ -76,9 +72,7 @@ def get_users():
 
 @app.route('/users/favorites', methods=['GET'])
 def get_user_favorites():
-    # Aquí debería implementar lógica de autenticación para obtener el usuario actual
-    # Para este ejemplo, se asumirá que el usuario con id=1 es el usuario actual
-    current_user_id = 1
+    current_user_id = 1  # Esto debe ser reemplazado por la lógica de autenticación real
     user = User.query.get(current_user_id)
     if not user:
         return jsonify({"msg": "User not found"}), 404
@@ -91,11 +85,10 @@ def get_user_favorites():
         "favorite_planets": favorite_planets
     }), 200
 
+# Endpoints de Favoritos
 @app.route('/favorite/planet/<int:planet_id>', methods=['POST'])
 def add_favorite_planet(planet_id):
-    # Aquí debería implementar lógica de autenticación para obtener el usuario actual
-    # Para este ejemplo, se asumirá que el usuario con id=1 es el usuario actual
-    current_user_id = 1
+    current_user_id = 1  # Esto debe ser reemplazado por la lógica de autenticación real
     user = User.query.get(current_user_id)
     if not user:
         return jsonify({"msg": "User not found"}), 404
@@ -112,9 +105,7 @@ def add_favorite_planet(planet_id):
 
 @app.route('/favorite/people/<int:people_id>', methods=['POST'])
 def add_favorite_character(people_id):
-    # Aquí debería implementar lógica de autenticación para obtener el usuario actual
-    # Para este ejemplo, se asumirá que el usuario con id=1 es el usuario actual
-    current_user_id = 1
+    current_user_id = 1  # Esto debe ser reemplazado por la lógica de autenticación real
     user = User.query.get(current_user_id)
     if not user:
         return jsonify({"msg": "User not found"}), 404
@@ -131,9 +122,7 @@ def add_favorite_character(people_id):
 
 @app.route('/favorite/planet/<int:planet_id>', methods=['DELETE'])
 def delete_favorite_planet(planet_id):
-    # Aquí debería implementar lógica de autenticación para obtener el usuario actual
-    # Para este ejemplo, se asumirá que el usuario con id=1 es el usuario actual
-    current_user_id = 1
+    current_user_id = 1  # Esto debe ser reemplazado por la lógica de autenticación real
     favorite = FavoritePlanet.query.filter_by(user_id=current_user_id, planet_id=planet_id).first()
     if not favorite:
         return jsonify({"msg": "Favorite not found"}), 404
@@ -145,9 +134,7 @@ def delete_favorite_planet(planet_id):
 
 @app.route('/favorite/people/<int:people_id>', methods=['DELETE'])
 def delete_favorite_character(people_id):
-    # Aquí debería implementar lógica de autenticación para obtener el usuario actual
-    # Para este ejemplo, se asumirá que el usuario con id=1 es el usuario actual
-    current_user_id = 1
+    current_user_id = 1  # Esto debe ser reemplazado por la lógica de autenticación real
     favorite = FavoriteCharacter.query.filter_by(user_id=current_user_id, character_id=people_id).first()
     if not favorite:
         return jsonify({"msg": "Favorite not found"}), 404
@@ -160,4 +147,4 @@ def delete_favorite_character(people_id):
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 3000))
-    app.run(host='0.0.0.0', port=PORT, debug=False)
+    app.run(host='0.0.0.0', port=PORT, debug=True)
