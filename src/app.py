@@ -2,6 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 import os
+import requests
 from flask import Flask, request, jsonify
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -85,64 +86,89 @@ def get_user_favorites():
         "favorite_planets": favorite_planets
     }), 200
 
+# Función para validar ID desde SWAPI
+def validate_swapi_id(entity_type, entity_id):
+    response = requests.get(f"https://swapi.dev/api/{entity_type}/{entity_id}/")
+    return response.status_code == 200
+
 # Endpoints de Favoritos
-@app.route('/favorite/planet/<int:planet_id>', methods=['POST'])
-def add_favorite_planet(planet_id):
+@app.route('/favorite/people', methods=['POST'])
+def add_favorite_character():
+    data = request.get_json()
     current_user_id = 1  # Esto debe ser reemplazado por la lógica de autenticación real
-    user = User.query.get(current_user_id)
-    if not user:
-        return jsonify({"msg": "User not found"}), 404
     
-    planet = Planet.query.get(planet_id)
-    if not planet:
-        return jsonify({"msg": "Planet not found"}), 404
-    
-    favorite = FavoritePlanet(user_id=user.id, planet_id=planet.id)
+    character_id = data.get('character_id')
+    if not character_id or not validate_swapi_id('people', character_id):
+        return jsonify({"msg": "Character not found in SWAPI"}), 404
+
+    favorite = FavoriteCharacter(user_id=current_user_id, character_id=character_id)
     db.session.add(favorite)
     db.session.commit()
-    
-    return jsonify({"msg": "Favorite added"}), 201
 
-@app.route('/favorite/people/<int:people_id>', methods=['POST'])
-def add_favorite_character(people_id):
+    return jsonify({"msg": "Favorite character added"}), 201
+
+@app.route('/favorite/planet', methods=['POST'])
+def add_favorite_planet():
+    data = request.get_json()
     current_user_id = 1  # Esto debe ser reemplazado por la lógica de autenticación real
-    user = User.query.get(current_user_id)
-    if not user:
-        return jsonify({"msg": "User not found"}), 404
     
-    character = Character.query.get(people_id)
-    if not character:
-        return jsonify({"msg": "Character not found"}), 404
-    
-    favorite = FavoriteCharacter(user_id=user.id, character_id=character.id)
+    planet_id = data.get('planet_id')
+    if not planet_id or not validate_swapi_id('planets', planet_id):
+        return jsonify({"msg": "Planet not found in SWAPI"}), 404
+
+    favorite = FavoritePlanet(user_id=current_user_id, planet_id=planet_id)
     db.session.add(favorite)
     db.session.commit()
-    
-    return jsonify({"msg": "Favorite added"}), 201
 
-@app.route('/favorite/planet/<int:planet_id>', methods=['DELETE'])
-def delete_favorite_planet(planet_id):
-    current_user_id = 1  # Esto debe ser reemplazado por la lógica de autenticación real
-    favorite = FavoritePlanet.query.filter_by(user_id=current_user_id, planet_id=planet_id).first()
+    return jsonify({"msg": "Favorite planet added"}), 201
+
+@app.route('/favorite/people/<int:favorite_id>', methods=['PUT'])
+def update_favorite_character(favorite_id):
+    data = request.get_json()
+    favorite = FavoriteCharacter.query.get(favorite_id)
     if not favorite:
         return jsonify({"msg": "Favorite not found"}), 404
-    
-    db.session.delete(favorite)
-    db.session.commit()
-    
-    return jsonify({"msg": "Favorite deleted"}), 200
 
-@app.route('/favorite/people/<int:people_id>', methods=['DELETE'])
-def delete_favorite_character(people_id):
-    current_user_id = 1  # Esto debe ser reemplazado por la lógica de autenticación real
-    favorite = FavoriteCharacter.query.filter_by(user_id=current_user_id, character_id=people_id).first()
+    character_id = data.get('character_id')
+    if character_id and validate_swapi_id('people', character_id):
+        favorite.character_id = character_id
+    
+    db.session.commit()
+    return jsonify({"msg": "Favorite character updated"}), 200
+
+@app.route('/favorite/planet/<int:favorite_id>', methods=['PUT'])
+def update_favorite_planet(favorite_id):
+    data = request.get_json()
+    favorite = FavoritePlanet.query.get(favorite_id)
     if not favorite:
         return jsonify({"msg": "Favorite not found"}), 404
+
+    planet_id = data.get('planet_id')
+    if planet_id and validate_swapi_id('planets', planet_id):
+        favorite.planet_id = planet_id
     
+    db.session.commit()
+    return jsonify({"msg": "Favorite planet updated"}), 200
+
+@app.route('/favorite/people/<int:favorite_id>', methods=['DELETE'])
+def delete_favorite_character(favorite_id):
+    favorite = FavoriteCharacter.query.get(favorite_id)
+    if not favorite:
+        return jsonify({"msg": "Favorite not found"}), 404
+
     db.session.delete(favorite)
     db.session.commit()
-    
-    return jsonify({"msg": "Favorite deleted"}), 200
+    return jsonify({"msg": "Favorite character deleted"}), 200
+
+@app.route('/favorite/planet/<int:favorite_id>', methods=['DELETE'])
+def delete_favorite_planet(favorite_id):
+    favorite = FavoritePlanet.query.get(favorite_id)
+    if not favorite:
+        return jsonify({"msg": "Favorite not found"}), 404
+
+    db.session.delete(favorite)
+    db.session.commit()
+    return jsonify({"msg": "Favorite planet deleted"}), 200
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
