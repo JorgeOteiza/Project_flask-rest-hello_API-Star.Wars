@@ -26,7 +26,7 @@ module.exports = merge(common, {
     allowedHosts: "all",
     historyApiFallback: true,
     static: {
-      directory: path.resolve(__dirname, "project_Blog_de_StarWars/public"),
+      directory: path.resolve(__dirname, "dist"),
     },
     client: {
       webSocketURL: publicUrl,

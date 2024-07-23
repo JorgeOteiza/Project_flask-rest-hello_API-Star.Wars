@@ -4,10 +4,10 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const Dotenv = require("dotenv-webpack");
 
 module.exports = {
-  entry: ["./project_Blog_de_StarWars/src/js/index.js"],
+  entry: "./project_Blog_de_StarWars/src/js/index.js",
   output: {
     filename: "bundle.js",
-    path: path.resolve(__dirname, "project_Blog_de_StarWars/public"),
+    path: path.resolve(__dirname, "dist"),
     publicPath: "/",
   },
   module: {
@@ -18,27 +18,20 @@ module.exports = {
         use: ["babel-loader"],
       },
       {
-        test: /\.(css)$/,
-        use: [
-          {
-            loader: "style-loader", // creates style nodes from JS strings
-          },
-          {
-            loader: "css-loader", // translates CSS into CommonJS
-          },
-        ],
-      }, //css only files
+        test: /\.css$/,
+        use: ["style-loader", "css-loader"],
+      },
       {
         test: /\.(png|svg|jpg|gif|jpeg|webp)$/,
         use: {
           loader: "file-loader",
           options: { name: "[name].[ext]" },
         },
-      }, //for images
+      },
       {
         test: /\.woff($|\?)|\.woff2($|\?)|\.ttf($|\?)|\.eot($|\?)|\.svg($|\?)/,
         use: ["file-loader"],
-      }, //for fonts
+      },
     ],
   },
   resolve: {
@@ -46,7 +39,8 @@ module.exports = {
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: "project_Blog_de_StarWars/template.html",
+      favicon: "4geeks.ico",
+      template: "template.html",
     }),
     new Dotenv({ safe: true, systemvars: true }),
   ],
