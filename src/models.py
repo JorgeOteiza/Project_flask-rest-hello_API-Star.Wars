@@ -46,6 +46,7 @@ class Planet(db.Model):
     climate = db.Column(db.String(50))
     diameter = db.Column(db.String(50))
     population = db.Column(db.String(50))
+    terrain = db.Column(db.String(50))
     favorites = db.relationship('FavoritePlanet', back_populates='planet')
 
     def serialize(self):
@@ -55,6 +56,7 @@ class Planet(db.Model):
             'climate': self.climate,
             'diameter': self.diameter,
             'population': self.population,
+            'terrain': self.terrain,
         }
 
 class FavoriteCharacter(db.Model):
