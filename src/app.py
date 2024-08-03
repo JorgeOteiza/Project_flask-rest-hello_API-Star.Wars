@@ -4,9 +4,9 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
-from utils import APIException, generate_sitemap
-from admin import setup_admin
-from models import db, User, Character, Planet, FavoriteCharacter, FavoritePlanet
+from .utils import APIException, generate_sitemap
+from .admin import setup_admin
+from .models import db, User, Character, Planet, FavoriteCharacter, FavoritePlanet
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -41,7 +41,7 @@ def get_people():
     result = [person.serialize() for person in people]
     return jsonify(result), 200
 
-@app.route('/people/<int:people_id>', methods=['GET'])
+@app.route('/people/<people_id>', methods=['GET'])
 def get_person(people_id):
     person = Character.query.get(people_id)
     if not person:
@@ -55,7 +55,7 @@ def get_planets():
     result = [planet.serialize() for planet in planets]
     return jsonify(result), 200
 
-@app.route('/planets/<int:planet_id>', methods=['GET'])
+@app.route('/planets/<planet_id>', methods=['GET'])
 def get_planet(planet_id):
     planet = Planet.query.get(planet_id)
     if not planet:
@@ -120,7 +120,7 @@ def add_favorite_planet():
 
     return jsonify({"msg": "Favorite planet added"}), 201
 
-@app.route('/favorite/people/<int:favorite_id>', methods=['PUT'])
+@app.route('/favorite/people/<favorite_id>', methods=['PUT'])
 def update_favorite_character(favorite_id):
     data = request.get_json()
     favorite = FavoriteCharacter.query.get(favorite_id)
@@ -134,7 +134,7 @@ def update_favorite_character(favorite_id):
     db.session.commit()
     return jsonify({"msg": "Favorite character updated"}), 200
 
-@app.route('/favorite/planet/<int:favorite_id>', methods=['PUT'])
+@app.route('/favorite/planet/<favorite_id>', methods=['PUT'])
 def update_favorite_planet(favorite_id):
     data = request.get_json()
     favorite = FavoritePlanet.query.get(favorite_id)
@@ -148,7 +148,7 @@ def update_favorite_planet(favorite_id):
     db.session.commit()
     return jsonify({"msg": "Favorite planet updated"}), 200
 
-@app.route('/favorite/people/<int:favorite_id>', methods=['DELETE'])
+@app.route('/favorite/people/<favorite_id>', methods=['DELETE'])
 def delete_favorite_character(favorite_id):
     favorite = FavoriteCharacter.query.get(favorite_id)
     if not favorite:
@@ -158,7 +158,7 @@ def delete_favorite_character(favorite_id):
     db.session.commit()
     return jsonify({"msg": "Favorite character deleted"}), 200
 
-@app.route('/favorite/planet/<int:favorite_id>', methods=['DELETE'])
+@app.route('/favorite/planet/<favorite_id>', methods=['DELETE'])
 def delete_favorite_planet(favorite_id):
     favorite = FavoritePlanet.query.get(favorite_id)
     if not favorite:
