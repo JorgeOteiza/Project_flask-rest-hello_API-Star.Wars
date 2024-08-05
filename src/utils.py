@@ -1,24 +1,42 @@
+import requests
 from flask import jsonify, url_for
-import os
 
 class APIException(Exception):
-    def __init__(self, message, status_code=400):
+    status_code = 500
+
+    def __init__(self, message, status_code=None):
         super().__init__()
         self.message = message
-        self.status_code = status_code
+        if status_code is not None:
+            self.status_code = status_code
 
     def to_dict(self):
-        return {"message": self.message}
+        return {
+            "message": self.message,
+            "status_code": self.status_code
+        }
 
 def generate_sitemap(app):
-    output = []
-    for rule in app.url_map.iter_rules():
-        options = {}
-        for arg in rule.arguments:
-            options[arg] = "[{}]".format(arg)
+    try:
+        links = []
+        for rule in app.url_map.iter_rules():
+            if rule.endpoint != 'static':
+                url = url_for(rule.endpoint, **(rule.defaults or {}))
+                links.append(url)
+        return jsonify(links)
+    except Exception as e:
+        raise APIException(f"Error generating sitemap: {str(e)}", 500)
 
-        methods = ','.join(rule.methods)
-        url = url_for(rule.endpoint, **options)
-        output.append((url, methods))
+def get_swapi_data(endpoint):
+    base_url = "https://swapi.dev/api"
+    try:
+        response = requests.get(f"{base_url}/{endpoint}")
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        raise APIException(f"Error fetching data from SWAPI: {str(e)}", 502)
 
-    return jsonify(output)
+# Función para validar ID desde SWAPI
+def validate_swapi_id(entity_type, entity_id):
+    response = requests.get(f"https://swapi.dev/api/{entity_type}/{entity_id}/")
+    return response.status_code == 200

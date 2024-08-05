@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
-from .utils import APIException, generate_sitemap
+from .utils import APIException, generate_sitemap, validate_swapi_id
 from .admin import setup_admin
 from .models import db, User, Character, Planet, FavoriteCharacter, FavoritePlanet
 
@@ -13,7 +13,7 @@ app.url_map.strict_slashes = False
 
 # Setup database
 db_url = os.getenv("DATABASE_URL")
-if db_url is not None:
+if db_url:
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace("postgres://", "postgresql://")
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:////tmp/test.db"
@@ -27,6 +27,9 @@ setup_admin(app)
 # Handle/serialize errors like a JSON object
 @app.errorhandler(APIException)
 def handle_invalid_usage(error):
+    response = jsonify(error.to_dict())
+    response.status_code = error.status_code
+    return response
     return jsonify(error.to_dict()), error.status_code
 
 # generate sitemap with all your endpoints
@@ -41,7 +44,7 @@ def get_people():
     result = [person.serialize() for person in people]
     return jsonify(result), 200
 
-@app.route('/people/<people_id>', methods=['GET'])
+@app.route('/people/<int:people_id>', methods=['GET'])
 def get_person(people_id):
     person = Character.query.get(people_id)
     if not person:
@@ -55,7 +58,7 @@ def get_planets():
     result = [planet.serialize() for planet in planets]
     return jsonify(result), 200
 
-@app.route('/planets/<planet_id>', methods=['GET'])
+@app.route('/planets/<int:planet_id>', methods=['GET'])
 def get_planet(planet_id):
     planet = Planet.query.get(planet_id)
     if not planet:
@@ -83,11 +86,6 @@ def get_user_favorites():
         "favorite_characters": favorite_characters,
         "favorite_planets": favorite_planets
     }), 200
-
-# Función para validar ID desde SWAPI
-def validate_swapi_id(entity_type, entity_id):
-    response = requests.get(f"https://swapi.dev/api/{entity_type}/{entity_id}/")
-    return response.status_code == 200
 
 # Endpoints de Favoritos
 @app.route('/favorite/people', methods=['POST'])
@@ -120,7 +118,7 @@ def add_favorite_planet():
 
     return jsonify({"msg": "Favorite planet added"}), 201
 
-@app.route('/favorite/people/<favorite_id>', methods=['PUT'])
+@app.route('/favorite/people/<int:favorite_id>', methods=['PUT'])
 def update_favorite_character(favorite_id):
     data = request.get_json()
     favorite = FavoriteCharacter.query.get(favorite_id)
@@ -134,7 +132,7 @@ def update_favorite_character(favorite_id):
     db.session.commit()
     return jsonify({"msg": "Favorite character updated"}), 200
 
-@app.route('/favorite/planet/<favorite_id>', methods=['PUT'])
+@app.route('/favorite/planet/<int:favorite_id>', methods=['PUT'])
 def update_favorite_planet(favorite_id):
     data = request.get_json()
     favorite = FavoritePlanet.query.get(favorite_id)
@@ -148,7 +146,7 @@ def update_favorite_planet(favorite_id):
     db.session.commit()
     return jsonify({"msg": "Favorite planet updated"}), 200
 
-@app.route('/favorite/people/<favorite_id>', methods=['DELETE'])
+@app.route('/favorite/people/<int:favorite_id>', methods=['DELETE'])
 def delete_favorite_character(favorite_id):
     favorite = FavoriteCharacter.query.get(favorite_id)
     if not favorite:
@@ -158,7 +156,7 @@ def delete_favorite_character(favorite_id):
     db.session.commit()
     return jsonify({"msg": "Favorite character deleted"}), 200
 
-@app.route('/favorite/planet/<favorite_id>', methods=['DELETE'])
+@app.route('/favorite/planet/<int:favorite_id>', methods=['DELETE'])
 def delete_favorite_planet(favorite_id):
     favorite = FavoritePlanet.query.get(favorite_id)
     if not favorite:
