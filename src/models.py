@@ -10,6 +10,7 @@ class User(db.Model):
     created_at = db.Column(db.DateTime)
     favorite_characters = db.relationship('FavoriteCharacter', back_populates='user')
     favorite_planets = db.relationship('FavoritePlanet', back_populates='user')
+    favorite_vehicles = db.relationship('FavoriteVehicle', back_populates='user')
 
     def serialize(self):
         return {
@@ -59,6 +60,27 @@ class Planet(db.Model):
             'terrain': self.terrain,
         }
 
+class Vehicle(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(250), nullable=False)
+    model = db.Column(db.String(50))
+    manufacturer = db.Column(db.String(50))
+    cost_in_credits = db.Column(db.String(50))
+    passengers = db.Column(db.String(50))
+    vehicle_class = db.Column(db.String(50))
+    favorites = db.relationship('FavoriteVehicle', back_populates='vehicle')
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'model': self.model,
+            'manufacturer': self.manufacturer,
+            'cost_in_credits': self.cost_in_credits,
+            'passengers': self.passengers,
+            'vehicle_class': self.vehicle_class,
+        }
+
 class FavoriteCharacter(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -72,3 +94,10 @@ class FavoritePlanet(db.Model):
     planet_id = db.Column(db.Integer, db.ForeignKey('planet.id'), nullable=False)
     user = db.relationship('User', back_populates='favorite_planets')
     planet = db.relationship('Planet', back_populates='favorites')
+
+class FavoriteVehicle(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    vehicle_id = db.Column(db.Integer, db.ForeignKey('vehicle.id'), nullable=False)
+    user = db.relationship('User', back_populates='favorite_vehicles')
+    vehicle = db.relationship('Vehicle', back_populates='favorites')

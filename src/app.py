@@ -6,7 +6,7 @@ from flask_migrate import Migrate
 from flask_cors import CORS
 from .utils import APIException, generate_sitemap, validate_swapi_id
 from .admin import setup_admin
-from .models import db, User, Character, Planet, FavoriteCharacter, FavoritePlanet
+from .models import db, User, Character, Planet, Vehicle, FavoriteCharacter, FavoritePlanet, FavoriteVehicle
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -65,6 +65,20 @@ def get_planet(planet_id):
         return jsonify({"msg": "Planet not found"}), 404
     return jsonify(planet.serialize()), 200
 
+# Endpoints de Vehicles
+@app.route('/vehicles', methods=['GET'])
+def get_vehicles():
+    vehicles = Vehicle.query.all()
+    result = [vehicle.serialize() for vehicle in vehicles]
+    return jsonify(result), 200
+
+@app.route('/vehicles/<int:vehicle_id>', methods=['GET'])
+def get_vehicle(vehicle_id):
+    vehicle = Vehicle.query.get(vehicle_id)
+    if not vehicle:
+        return jsonify({"msg": "Vehicle not found"}), 404
+    return jsonify(vehicle.serialize()), 200
+
 # Endpoints de Users
 @app.route('/users', methods=['GET'])
 def get_users():
@@ -81,10 +95,12 @@ def get_user_favorites():
     
     favorite_characters = [fav.character.serialize() for fav in user.favorite_characters]
     favorite_planets = [fav.planet.serialize() for fav in user.favorite_planets]
+    favorite_vehicles = [fav.vehicle.serialize() for fav in user.favorite_vehicles]
 
     return jsonify({
         "favorite_characters": favorite_characters,
-        "favorite_planets": favorite_planets
+        "favorite_planets": favorite_planets,
+        "favorite_vehicles": favorite_vehicles
     }), 200
 
 # Endpoints de Favoritos
@@ -118,55 +134,55 @@ def add_favorite_planet():
 
     return jsonify({"msg": "Favorite planet added"}), 201
 
-@app.route('/favorite/people/<int:favorite_id>', methods=['PUT'])
-def update_favorite_character(favorite_id):
+@app.route('/favorite/vehicle', methods=['POST'])
+def add_favorite_vehicle():
     data = request.get_json()
-    favorite = FavoriteCharacter.query.get(favorite_id)
-    if not favorite:
-        return jsonify({"msg": "Favorite not found"}), 404
-
-    character_id = data.get('character_id')
-    if character_id and validate_swapi_id('people', character_id):
-        favorite.character_id = character_id
+    current_user_id = 1  # Esto debe ser reemplazado por la lógica de autenticación real
     
+    vehicle_id = data.get('vehicle_id')
+    if not vehicle_id or not validate_swapi_id('vehicles', vehicle_id):
+        return jsonify({"msg": "Vehicle not found in SWAPI"}), 404
+
+    favorite = FavoriteVehicle(user_id=current_user_id, vehicle_id=vehicle_id)
+    db.session.add(favorite)
     db.session.commit()
-    return jsonify({"msg": "Favorite character updated"}), 200
 
-@app.route('/favorite/planet/<int:favorite_id>', methods=['PUT'])
-def update_favorite_planet(favorite_id):
-    data = request.get_json()
-    favorite = FavoritePlanet.query.get(favorite_id)
-    if not favorite:
-        return jsonify({"msg": "Favorite not found"}), 404
+    return jsonify({"msg": "Favorite vehicle added"}), 201
 
-    planet_id = data.get('planet_id')
-    if planet_id and validate_swapi_id('planets', planet_id):
-        favorite.planet_id = planet_id
-    
-    db.session.commit()
-    return jsonify({"msg": "Favorite planet updated"}), 200
-
+# Endpoints para eliminar favoritos
 @app.route('/favorite/people/<int:favorite_id>', methods=['DELETE'])
-def delete_favorite_character(favorite_id):
+def remove_favorite_character(favorite_id):
     favorite = FavoriteCharacter.query.get(favorite_id)
     if not favorite:
-        return jsonify({"msg": "Favorite not found"}), 404
+        return jsonify({"msg": "Favorite character not found"}), 404
 
     db.session.delete(favorite)
     db.session.commit()
-    return jsonify({"msg": "Favorite character deleted"}), 200
+
+    return jsonify({"msg": "Favorite character removed"}), 200
 
 @app.route('/favorite/planet/<int:favorite_id>', methods=['DELETE'])
-def delete_favorite_planet(favorite_id):
+def remove_favorite_planet(favorite_id):
     favorite = FavoritePlanet.query.get(favorite_id)
     if not favorite:
-        return jsonify({"msg": "Favorite not found"}), 404
+        return jsonify({"msg": "Favorite planet not found"}), 404
 
     db.session.delete(favorite)
     db.session.commit()
-    return jsonify({"msg": "Favorite planet deleted"}), 200
 
-# this only runs if `$ python src/app.py` is executed
+    return jsonify({"msg": "Favorite planet removed"}), 200
+
+@app.route('/favorite/vehicle/<int:favorite_id>', methods=['DELETE'])
+def remove_favorite_vehicle(favorite_id):
+    favorite = FavoriteVehicle.query.get(favorite_id)
+    if not favorite:
+        return jsonify({"msg": "Favorite vehicle not found"}), 404
+
+    db.session.delete(favorite)
+    db.session.commit()
+
+    return jsonify({"msg": "Favorite vehicle removed"}), 200
+
+# This only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
-    PORT = int(os.environ.get('PORT', 3000))
-    app.run(host='0.0.0.0', port=PORT, debug=True)
+    app.run(host='0.0.0.0', port=os.getenv("PORT", 8080), debug=True)
