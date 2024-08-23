@@ -87,6 +87,51 @@ def get_users():
     result = [user.serialize() for user in users]
     return jsonify(result), 200
 
+@app.route('/users/<int:user_id>', methods=['GET'])
+def get_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+    return jsonify(user.serialize()), 200
+
+# Endpoints de Favoritos de Planets
+@app.route('/favorite/planets', methods=['GET'])
+def get_favorite_planets():
+    current_user_id = 1  # Aquí debes reemplazar con la lógica de autenticación real
+    user = User.query.get(current_user_id)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+    
+    favorite_planets = [fav.planet.serialize() for fav in user.favorite_planets]
+    return jsonify(favorite_planets), 200
+
+# Endpoints de Favoritos de Characters
+@app.route('/favorite/people', methods=['GET', 'POST'])
+def handle_favorite_character():
+    if request.method == 'POST':
+        data = request.get_json()
+        current_user_id = 1  # Reemplaza con la lógica de autenticación real
+        
+        character_id = data.get('character_id')
+        if not character_id or not validate_swapi_id('people', character_id):
+            return jsonify({"msg": "Character not found in SWAPI"}), 404
+
+        favorite = FavoriteCharacter(user_id=current_user_id, character_id=character_id)
+        db.session.add(favorite)
+        db.session.commit()
+
+        return jsonify({"msg": "Favorite character added"}), 201
+
+    elif request.method == 'GET':
+        current_user_id = 1  # Reemplaza con la lógica de autenticación real
+        user = User.query.get(current_user_id)
+        if not user:
+            return jsonify({"msg": "User not found"}), 404
+        
+        favorite_characters = [fav.character.serialize() for fav in user.favorite_characters]
+        return jsonify(favorite_characters), 200
+
+# Endpoint para obtener todos los favoritos de un usuario
 @app.route('/users/favorites', methods=['GET'])
 def get_user_favorites():
     current_user_id = 1  # Esto debe ser reemplazado por la lógica de autenticación real
@@ -104,22 +149,7 @@ def get_user_favorites():
         "favorite_vehicles": favorite_vehicles
     }), 200
 
-# Endpoints de Favoritos
-@app.route('/favorite/people', methods=['POST'])
-def add_favorite_character():
-    data = request.get_json()
-    current_user_id = 1  # Esto debe ser reemplazado por la lógica de autenticación real
-    
-    character_id = data.get('character_id')
-    if not character_id or not validate_swapi_id('people', character_id):
-        return jsonify({"msg": "Character not found in SWAPI"}), 404
-
-    favorite = FavoriteCharacter(user_id=current_user_id, character_id=character_id)
-    db.session.add(favorite)
-    db.session.commit()
-
-    return jsonify({"msg": "Favorite character added"}), 201
-
+# Endpoint para añadir un planeta favorito
 @app.route('/favorite/planet', methods=['POST'])
 def add_favorite_planet():
     data = request.get_json()
@@ -135,6 +165,7 @@ def add_favorite_planet():
 
     return jsonify({"msg": "Favorite planet added"}), 201
 
+# Endpoint para añadir un vehículo favorito
 @app.route('/favorite/vehicle', methods=['POST'])
 def add_favorite_vehicle():
     data = request.get_json()
