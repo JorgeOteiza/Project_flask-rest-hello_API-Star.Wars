@@ -10,6 +10,7 @@ from .models import db, User, Character, Planet, Vehicle, FavoriteCharacter, Fav
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
+app.secret_key = os.urandom(24)
 
 # Setup database
 db_url = os.getenv("DATABASE_URL")
