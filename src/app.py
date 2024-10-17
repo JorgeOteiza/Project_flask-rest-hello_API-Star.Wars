@@ -156,8 +156,15 @@ def add_favorite_planet():
     current_user_id = 1  # Esto debe ser reemplazado por la lógica de autenticación real
     
     planet_id = data.get('planet_id')
-    if not planet_id or not validate_swapi_id('planets', planet_id):
+    if not planet_id:
         return jsonify({"msg": "Planet not found in SWAPI"}), 404
+
+    # Verificar si ya existe un registro con el mismo user_id y planet_id
+    existing_favorite = FavoritePlanet.query.filter_by(user_id=current_user_id, planet_id=planet_id).first()
+
+    if existing_favorite:
+        return jsonify({"error": "El usuario ya tiene este planeta como favorito"}), 409
+
 
     favorite = FavoritePlanet(user_id=current_user_id, planet_id=planet_id)
     db.session.add(favorite)
