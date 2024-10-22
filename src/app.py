@@ -1,10 +1,9 @@
 import os
-import requests
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
-from .utils import APIException, generate_sitemap, validate_swapi_id
+from .utils import APIException, generate_sitemap
 from .admin import setup_admin
 from .models import db, User, Character, Planet, Vehicle, FavoriteCharacter, FavoritePlanet, FavoriteVehicle
 
@@ -31,7 +30,6 @@ def handle_invalid_usage(error):
     response = jsonify(error.to_dict())
     response.status_code = error.status_code
     return response
-    return jsonify(error.to_dict()), error.status_code
 
 # generate sitemap with all your endpoints
 @app.route('/')
@@ -113,8 +111,8 @@ def handle_favorite_character():
         current_user_id = 1  # Reemplaza con la lógica de autenticación real
         
         character_id = data.get('character_id')
-        if not character_id or not validate_swapi_id('people', character_id):
-            return jsonify({"msg": "Character not found in SWAPI"}), 404
+        if not character_id:
+            return jsonify({"msg": "Character ID is required"}), 400
 
         favorite = FavoriteCharacter(user_id=current_user_id, character_id=character_id)
         db.session.add(favorite)
@@ -157,14 +155,13 @@ def add_favorite_planet():
     
     planet_id = data.get('planet_id')
     if not planet_id:
-        return jsonify({"msg": "Planet not found in SWAPI"}), 404
+        return jsonify({"msg": "Planet ID is required"}), 400
 
     # Verificar si ya existe un registro con el mismo user_id y planet_id
     existing_favorite = FavoritePlanet.query.filter_by(user_id=current_user_id, planet_id=planet_id).first()
 
     if existing_favorite:
         return jsonify({"error": "El usuario ya tiene este planeta como favorito"}), 409
-
 
     favorite = FavoritePlanet(user_id=current_user_id, planet_id=planet_id)
     db.session.add(favorite)
@@ -179,8 +176,8 @@ def add_favorite_vehicle():
     current_user_id = 1  # Esto debe ser reemplazado por la lógica de autenticación real
     
     vehicle_id = data.get('vehicle_id')
-    if not vehicle_id or not validate_swapi_id('vehicles', vehicle_id):
-        return jsonify({"msg": "Vehicle not found in SWAPI"}), 404
+    if not vehicle_id:
+        return jsonify({"msg": "Vehicle ID is required"}), 400
 
     favorite = FavoriteVehicle(user_id=current_user_id, vehicle_id=vehicle_id)
     db.session.add(favorite)

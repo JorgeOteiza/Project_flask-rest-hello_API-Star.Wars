@@ -1,4 +1,3 @@
-import requests
 from flask import jsonify, url_for
 
 class APIException(Exception):
@@ -25,8 +24,6 @@ def has_no_empty_params(rule):
 def generate_sitemap(app):
     links = ['/admin/']
     for rule in app.url_map.iter_rules():
-        # Filtrar las reglas que no podemos navegar en un navegador
-        # y las reglas que requieren parámetros
         if "GET" in rule.methods and has_no_empty_params(rule):
             url = url_for(rule.endpoint, **(rule.defaults or {}))
             if "/admin/" not in url:
@@ -41,17 +38,3 @@ def generate_sitemap(app):
         <p>Start working on your project by following the <a href="https://start.4geeksacademy.com/starters/flask" target="_blank">Quick Start</a></p>
         <p>Remember to specify a real endpoint path like: </p>
         <ul style="text-align: left;">"""+links_html+"</ul></div>"
-
-def get_swapi_data(endpoint):
-    base_url = "https://swapi.dev/api"
-    try:
-        response = requests.get(f"{base_url}/{endpoint}")
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        raise APIException(f"Error fetching data from SWAPI: {str(e)}", 502)
-
-# Función para validar ID desde SWAPI
-def validate_swapi_id(entity_type, entity_id):
-    response = requests.get(f"https://swapi.dev/api/{entity_type}/{entity_id}/")
-    return response.status_code == 200
