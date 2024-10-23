@@ -6,6 +6,9 @@ from flask_cors import CORS
 from .utils import APIException, generate_sitemap
 from .admin import setup_admin
 from .models import db, User, Character, Planet, Vehicle, FavoriteCharacter, FavoritePlanet, FavoriteVehicle
+from dotenv import load_dotenv
+load_dotenv()
+
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -21,7 +24,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 MIGRATE = Migrate(app, db)
 db.init_app(app)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
+
 setup_admin(app)
 
 # Handle/serialize errors like a JSON object
@@ -221,4 +225,5 @@ def remove_favorite_vehicle(favorite_id):
 
 # This only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=os.getenv("PORT", 8080), debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
+
